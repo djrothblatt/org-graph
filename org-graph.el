@@ -1,3 +1,5 @@
+(defvar org-graph-graphviz-command "dot")
+
 (defun org-graph--make-edge (source target)
   "Creates link graph edge from SOURCE and TARGET."
   (list source target))
@@ -50,4 +52,24 @@ First we collect all the links on the page, then we traverse the links that go t
                    appending (org-graph--make-graph org-link
                                                     (adjoin (buffer-file-name) visited-buffers)))
              :test #'equal))))
+
+(defun org-graph--graph->graphviz (graph)
+  "Create graphviz document as string from GRAPH.
+
+GRAPH is an edge set ((source target) ...)."
+  (format "digraph {\n%s}"
+          (loop for (source target) in graph
+                concat (format "  \"%s\"->\"%s\";\n" source target))))
+
+(defun org-graph/create-image (buffer)
+  "Create graphviz document of buffer"
+  (interactive "bOrg buffer: ")
+  (shell-command
+   (concat org-graph-graphviz-command
+           " -T png -o org-graph.png << EOF\n"
+           (org-graph--graph->graphviz
+            (org-graph--make-graph buffer))
+           "\nEOF")
+   "*org-graph*")
+  (switch-to-buffer-other-window (find-file-noselect "file.png")))
 
