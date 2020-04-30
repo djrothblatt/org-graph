@@ -53,16 +53,31 @@ First we collect all the links on the page, then we traverse the links that go t
                                                     (adjoin (buffer-file-name) visited-buffers)))
              :test #'equal))))
 
+(defun org-graph--vertices (graph)
+  "Get the set of GRAPH's vertices."
+  (loop for (source target) in graph
+
+        unless (member source out)
+        collect source into out
+
+        unless (member target out)
+        collect target into out
+
+        finally return out))
+
 (defun org-graph--graph->graphviz (graph)
   "Create graphviz document as string from GRAPH.
 
 GRAPH is an edge set ((source target) ...)."
-  (format "digraph {\n%s}"
+  (format "digraph {\n%s\n%s}"
+          (loop for vertex in (org-graph--vertices graph)
+                concat (format "  \"%s\" [URL=\"%s\"];\n" vertex vertex))
+
           (loop for (source target) in graph
                 concat (format "  \"%s\"->\"%s\";\n" source target))))
 
-(defun org-graph/create-image (buffer)
-  "Create graphviz document of buffer"
+(defun org-graph/create-png (buffer)
+  "Create graphviz document of BUFFER."
   (interactive "bOrg buffer: ")
   (shell-command
    (concat org-graph-graphviz-command
@@ -71,5 +86,15 @@ GRAPH is an edge set ((source target) ...)."
             (org-graph--make-graph buffer))
            "\nEOF")
    "*org-graph*")
-  (switch-to-buffer-other-window (find-file-noselect "file.png")))
+  (switch-to-buffer-other-window (find-file-noselect "org-graph.png")))
 
+(defun org-graph/create-svg (buffer)
+  "Create clickable svg graph of BUFFER."
+  (interactive "bOrg buffer: ")
+  (shell-command
+   (concat org-graph-graphviz-command
+           " -T svg -o org-graph.svg << EOF\n"
+           (org-graph--graph->graphviz
+            (org-graph--make-graph buffer))
+           "\nEOF")
+   "*org-graph*"))
