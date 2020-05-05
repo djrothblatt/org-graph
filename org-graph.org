@@ -202,7 +202,9 @@
 
 *** Get vertices from graph
 
-    We mainly need the vertices of the graph for rendering it.
+    We use the vertices of the graph for rendering it in Graphviz.
+    It's not necessary, but it lets us add clickable links to the
+    vertices of our output graph.
 
     #+NAME: vertices-from-graph
     #+BEGIN_SRC elisp
