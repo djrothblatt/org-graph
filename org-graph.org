@@ -37,7 +37,277 @@
 
   These are some of the motivations behind this project.
 * The program
+** The preamble
+  Elisp projects have to include this boilerplate. Let's get it out of
+  the way here so we don't have to look at it!
+
+  This is also the root source block of our program; we tangle this to
+  produce our output file.
+
+  #+BEGIN_SRC elisp :tangle org-graph.el :noweb yes
+    ;;; org-graph.el --- Graph the relationships between your Org-Mode files  -*- lexical-binding: t; -*-
+
+    ;; Copyright (C) 2020  Daniel J. Rothblatt
+
+    ;; Author: Daniel J. Rothblatt <djrothblatt@gmail.com>
+    ;; Keywords: tools
+
+    ;; This program is free software; you can redistribute it and/or modify
+    ;; it under the terms of the GNU General Public License as published by
+    ;; the Free Software Foundation, either version 3 of the License, or
+    ;; (at your option) any later version.
+
+    ;; This program is distributed in the hope that it will be useful,
+    ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+    ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    ;; GNU General Public License for more details.
+
+    ;; You should have received a copy of the GNU General Public License
+    ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+    ;;; Commentary:
+
+    ;; Org Graph crawls the links in a given Org-Mode file, producing a graph
+    ;; of the Org-Mode files (and any other files/URLs it finds) and creating
+    ;; some legible output.
+
+    ;; Current output formats are PNG and SVG.
+
+    ;;; Code:
+
+    <<initialization>>
+
+    <<helpers>>
+
+    <<commands>>
+
+    (provide 'org-graph)
+
+    ;;; org-graph.el ends here
+  #+END_SRC
+
+** Initialization
+
+   We're working with Org-Mode, so we need to be upfront about it.
+   By requiring ~cl-lib~ we get a bunch of useful Common Lisp tools
+   that I didn't even realize I was using as I wrote this program.
+
+   #+NAME: initialization
+   #+BEGIN_SRC elisp
+     (require 'cl-lib)
+     (require 'org)
+
+     (defgroup org-graph nil
+       "Graph the relationships between your Org-Mode files"
+       :group 'tools)
+
+     (defcustom org-graph-graphviz-command "dot"
+       "The graphviz command to run."
+       :group 'org-graph
+       :type '(choice (const "dot")
+                      (const "neato")
+                      (const "circo")
+                      (const "twopi")
+                      (const "fdp")))
+   #+END_SRC
+
+*** TODO Any more ~defcustom~ declarations we need?
+** Helper functions
+
+   We need to construct a (directed) graph consisting of links between
+   Org files. We represent a graph as a set of edges ~((source target)
+   ...)~[fn:2], where ~source~ and ~target~ are each links
+   (represented as strings).
+
+   #+NAME: helpers
+   #+BEGIN_SRC elisp :noweb yes
+     <<link-to-edge>>
+
+     <<links-from-buffer>>
+
+     <<vertices-from-graph>>
+
+     <<make-graph>>
+
+     <<serialize-graph>>
+   #+END_SRC
+*** Convert links to edges
+    :PROPERTIES:
+    :CUSTOM_ID: links-to-edges
+    :END:
+
+    As we traverse our graph, we need to be able to convert link elements in a
+    buffer to edges in our graph. So far we can handle two scheme classes:
+    ~file:...~ and ~http(s):...~. For any type of link element we handle, we
+    need to extract the link from it and convert the link to a format
+    we'll be able to use later on.
+
+    #+NAME: link-to-edge
+    #+BEGIN_SRC elisp
+      (defun org-graph--make-edge (source target)
+        "Create link graph edge from SOURCE and TARGET."
+        (list source target))
+
+      (defun org-graph--file-link->edge (link)
+        "Turn file link LINK into graph edge."
+        (org-graph--make-edge
+         (buffer-file-name)
+         (expand-file-name
+          (org-element-property :path link))))
+
+      (defun org-graph--web-link->edge (link)
+        "Turn web link LINK into graph edge."
+        (org-graph--make-edge
+         (buffer-file-name)
+         (org-element-property :raw-link link)))
+
+      (defun org-graph--link->edge (link)
+        "Create link graph edge from LINK."
+        (cl-case (intern (org-element-property :type link))
+          (file (org-graph--file-link->edge link))
+          ((http https) (org-graph--web-link->edge link))))
+    #+END_SRC
+**** TODO Add more link type handlers?
+
+*** Get links from buffer
+    :PROPERTIES:
+    :CUSTOM_ID: get-links-from-buffer
+    :END:
+
+    We [[#links-to-edges][can build edges from link elements in our graph]], so now we need
+    to be able to grab the link elements from buffers. We only grab
+    links to Org files that we haven't visited to avoid infinite
+    loops.
+
+    #+NAME: links-from-buffer
+    #+BEGIN_SRC elisp
+      (defun org-graph--org-links (buffer visited-buffers)
+        "Get org links from BUFFER, excluding what's in VISITED-BUFFERS."
+        (cl-labels ((org-file-p (file)
+                               (string=
+                                (file-name-extension file)
+                                "org")))
+          (with-current-buffer (find-file-noselect buffer)
+            (org-element-map (org-element-parse-buffer) 'link
+              (lambda (link)
+                (let ((path (expand-file-name (org-element-property :path link))))
+                  (when (org-file-p path)
+                    (unless (member path visited-buffers)
+                      (expand-file-name path)))))))))
+
+      (defun org-graph--buffer-edges ()
+        "Get graph edges from links in current buffer."
+        (cl-remove-duplicates
+         (org-element-map (org-element-parse-buffer) 'link
+           #'org-graph--link->edge)
+         :test #'equal))
+    #+END_SRC
+
+*** Create graph
+
+    Now that we can [[#links-from-buffer][get links from a buffer]] and [[#links-to-edges][convert the links to
+    edges]], we can build up a graph by traversing our Org files. We recursively build up
+    our graph by getting all the edges out of the current buffer, then
+    following the links we haven't visited yet and getting their
+    edges. Since we're representing our graph as a set of edges, what
+    we're essentially doing is creating graphs for each Org file in
+    our network and returning their union.
+
+    #+NAME: make-graph
+    #+BEGIN_SRC elisp
+      (defun org-graph--make-graph (buffer &optional visited-buffers)
+        "Create graph from links in BUFFER, ignoring links in VISITED-BUFFERS.
+
+      First we collect all the links on the page, then we traverse the links that go to Org-Mode files."
+        (with-current-buffer (find-file-noselect buffer)
+          (let ((edges (org-graph--buffer-edges)))
+            (cl-union edges
+                      (cl-loop for org-link in (org-graph--org-links (buffer-file-name) visited-buffers)
+                               appending (org-graph--make-graph org-link
+                                                                (cl-adjoin (buffer-file-name) visited-buffers)))
+                      :test #'equal))))
+    #+END_SRC
+
+*** Get vertices from graph
+
+    We mainly need the vertices of the graph for rendering it.
+    #+NAME: vertices-from-graph
+    #+BEGIN_SRC elisp
+      (defun org-graph--vertices (graph)
+        "Get the set of GRAPH's vertices."
+        (cl-loop for (source target) in graph
+
+              unless (member source out)
+              collect source into out
+
+              unless (member target out)
+              collect target into out
+
+              finally return out))
+    #+END_SRC
+
+*** Serialize graph
+
+    So far we only render our graph by passing it off to [[www.graphviz.org][Graphviz]],
+    which is very flexible and good. That Graphviz makes it so easy to
+    render a graph from an edge set is one of the main reasons that
+    we're representing our graph as an edge set.
+
+    #+NAME: serialize-graph
+    #+BEGIN_SRC elisp
+      (defun org-graph--graph->graphviz (graph)
+        "Create graphviz document as string from GRAPH.
+
+      GRAPH is an edge set ((source target) ...)."
+        (format "digraph {\n%s\n%s}"
+                (cl-loop for vertex in (org-graph--vertices graph)
+                      concat (format "  \"%s\" [URL=\"%s\"];\n" vertex vertex))
+
+                (cl-loop for (source target) in graph
+                      concat (format "  \"%s\"->\"%s\";\n" source target))))
+    #+END_SRC
+
+**** TODO Serialize graph as an Org file?
+
+**** TODO Serialize graph as Elisp?
+** Commands
+
+   Right now we only export to our Graphviz backend, which allows us
+   to create many different visualizations. So far I've decided to
+   limit our exports to PNG and SVG formats, but we can also use
+   Graphviz to produce JSON, PDF, and [[https://graphviz.gitlab.io/_pages/doc/info/output.html][many more formats]]. And maybe we should!
+
+   #+NAME: commands
+   #+BEGIN_SRC elisp
+     (defun org-graph/create-png (buffer)
+       "Create graphviz document of BUFFER."
+       (interactive "bOrg buffer: ")
+       (shell-command
+        (concat org-graph-graphviz-command
+                " -T png -o org-graph.png << EOF\n"
+                (org-graph--graph->graphviz
+                 (org-graph--make-graph buffer))
+                "\nEOF")
+        "*org-graph*")
+       (switch-to-buffer-other-window (find-file-noselect "org-graph.png")))
+
+     (defun org-graph/create-svg (buffer)
+       "Create clickable svg graph of BUFFER."
+       (interactive "bOrg buffer: ")
+       (shell-command
+        (concat org-graph-graphviz-command
+                " -T svg -o org-graph.svg << EOF\n"
+                (org-graph--graph->graphviz
+                 (org-graph--make-graph buffer))
+                "\nEOF")
+        "*org-graph*"))
+   #+END_SRC
+*** TODO Check that the user has Graphviz installed before running command
 
 * Footnotes
 
 [fn:1] Emacsniks?
+
+[fn:2] Do we need any additional data besides the source and target
+for this particular graph? Since our edges are just lists, we can
+extend them pretty easily if we need to.
