@@ -44,6 +44,11 @@
                  (const "twopi")
                  (const "fdp")))
 
+(defcustom org-graph-browser "firefox"
+  "The browser for your graph SVGs."
+  :group 'org-graph
+  :type '(string))
+
 (defun org-graph--make-edge (source target)
   "Create link graph edge from SOURCE and TARGET."
   (list source target))
@@ -140,10 +145,12 @@ GRAPH is an edge set ((source target) ...)."
 (defun org-graph/create-svg (buffer)
   "Create clickable svg graph of BUFFER and browse it."
   (interactive "bOrg buffer: ")
-  (let ((file-name (symbol-name (gensym "org-graph-"))))
+  (let* ((file-name (symbol-name (gensym "org-graph-")))
+         (to-browse (concat "file://" (expand-file-name (concat file-name ".svg")))))
     (org-graph--graphviz-export buffer file-name "svg")
-    (browse-url-of-file
-     (concat "file://" (expand-file-name (concat "./" file-name ".svg"))))))
+    (if (executable-find org-graph-browser)
+        (call-process org-graph-browser nil 0 nil to-browse)
+      (browse-url-of-file to-browse))))
 
 (provide 'org-graph)
 
