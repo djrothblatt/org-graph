@@ -28,7 +28,9 @@
 
 ;;; Code:
 
-(provide 'org-graph)
+(require 'cl-lib)
+(require 'org)
+
 
 (defvar org-graph-graphviz-command "dot")
 
@@ -51,7 +53,7 @@
 
 (defun org-graph--link->edge (link)
   "Create link graph edge from LINK."
-  (case (intern (org-element-property :type link))
+  (cl-case (intern (org-element-property :type link))
     (file (org-graph--file-link->edge link))
     ((http https) (org-graph--web-link->edge link))))
 
@@ -70,8 +72,11 @@
                 (expand-file-name path)))))))))
 
 (defun org-graph--buffer-edges ()
-  (org-element-map (org-element-parse-buffer) 'link
-    #'org-graph--link->edge))
+  "Get graph edges from links in current buffer."
+  (cl-remove-duplicates
+   (org-element-map (org-element-parse-buffer) 'link
+     #'org-graph--link->edge)
+   :test #'equal))
 
 (defun org-graph--make-graph (buffer &optional visited-buffers)
   "Create graph from links in BUFFER, ignoring links in VISITED-BUFFERS.
@@ -79,15 +84,15 @@
 First we collect all the links on the page, then we traverse the links that go to Org-Mode files."
   (with-current-buffer (find-file-noselect buffer)
     (let ((edges (org-graph--buffer-edges)))
-      (union edges
-             (loop for org-link in (org-graph--org-links (buffer-file-name) visited-buffers)
+      (cl-union edges
+             (cl-loop for org-link in (org-graph--org-links (buffer-file-name) visited-buffers)
                    appending (org-graph--make-graph org-link
-                                                    (adjoin (buffer-file-name) visited-buffers)))
+                                                    (cl-adjoin (buffer-file-name) visited-buffers)))
              :test #'equal))))
 
 (defun org-graph--vertices (graph)
   "Get the set of GRAPH's vertices."
-  (loop for (source target) in graph
+  (cl-loop for (source target) in graph
 
         unless (member source out)
         collect source into out
@@ -102,10 +107,10 @@ First we collect all the links on the page, then we traverse the links that go t
 
 GRAPH is an edge set ((source target) ...)."
   (format "digraph {\n%s\n%s}"
-          (loop for vertex in (org-graph--vertices graph)
+          (cl-loop for vertex in (org-graph--vertices graph)
                 concat (format "  \"%s\" [URL=\"%s\"];\n" vertex vertex))
 
-          (loop for (source target) in graph
+          (cl-loop for (source target) in graph
                 concat (format "  \"%s\"->\"%s\";\n" source target))))
 
 (defun org-graph/create-png (buffer)
@@ -130,5 +135,7 @@ GRAPH is an edge set ((source target) ...)."
             (org-graph--make-graph buffer))
            "\nEOF")
    "*org-graph*"))
+
+(provide 'org-graph)
 
 ;;; org-graph.el ends here
