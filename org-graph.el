@@ -1,3 +1,35 @@
+;;; org-graph.el --- Graph the relationships between your Org-Mode files  -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2020  Daniel J. Rothblatt
+
+;; Author: Daniel J. Rothblatt <djrothblatt@gmail.com>
+;; Keywords: tools
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; Org Graph crawls the links in a given Org-Mode file, producing a graph
+;; of the Org-Mode files (and any other files/URLs it finds) and creating
+;; some legible output.
+
+;; Current output formats are PNG and SVG.
+
+;;; Code:
+
+(provide 'org-graph)
+
 (defvar org-graph-graphviz-command "dot")
 
 (defun org-graph--make-edge (source target)
@@ -98,3 +130,5 @@ GRAPH is an edge set ((source target) ...)."
             (org-graph--make-graph buffer))
            "\nEOF")
    "*org-graph*"))
+
+;;; org-graph.el ends here
