@@ -279,29 +279,28 @@
 
    #+NAME: commands
    #+BEGIN_SRC elisp
-     (defun org-graph/create-png (buffer)
-       "Create graphviz document of BUFFER and display in other window."
-       (interactive "bOrg buffer: ")
-       (shell-command
-        (concat org-graph-graphviz-command
-                " -T png -o org-graph.png << EOF\n"
-                (org-graph--graph->graphviz
-                 (org-graph--make-graph buffer))
-                "\nEOF")
-        "*org-graph*")
-       (switch-to-buffer-other-window (find-file-noselect "org-graph.png")))
+     (cl-labels ((export (buffer file-name output-format)
+                         (shell-command
+                          (concat org-graph-graphviz-command
+                                  (format " -T %s -o %s.%s << EOF\n" output-format file-name output-format)
+                                  (org-graph--graph->graphviz
+                                   (org-graph--make-graph buffer))
+                                  "\nEOF")
+                          "*org-graph*")))
+       (defun org-graph/create-png (buffer)
+        "Create graphviz document of BUFFER and display in other window."
+        (interactive "bOrg buffer: ")
+        (let ((file-name (gensym "org-graph-")))
+          (export buffer file-name "png")
+          (switch-to-buffer-other-window (find-file-noselect (concat "./" (symbol-name file-name) ".png")))))
 
-     (defun org-graph/create-svg (buffer)
-       "Create clickable svg graph of BUFFER and browse it."
-       (interactive "bOrg buffer: ")
-       (shell-command
-        (concat org-graph-graphviz-command
-                " -T svg -o org-graph.svg << EOF\n"
-                (org-graph--graph->graphviz
-                 (org-graph--make-graph buffer))
-                "\nEOF")
-        "*org-graph*")
-       (browse-url-of-file (concat "file://" (expand-file-name "./org-graph.svg"))))
+      (defun org-graph/create-svg (buffer)
+        "Create clickable svg graph of BUFFER and browse it."
+        (interactive "bOrg buffer: ")
+        (let ((file-name (gensym "org-graph-")))
+          (export buffer file-name "svg")
+          (browse-url-of-file
+           (concat "file://" (expand-file-name (concat "./" (symbol-name file-name) ".svg")))))))
    #+END_SRC
 *** TODO Check that the user has Graphviz installed before running command
 
