@@ -88,18 +88,6 @@
      #'org-graph--link->edge)
    :test #'equal))
 
-(defun org-graph--make-graph (buffer &optional visited-buffers)
-  "Create graph from links in BUFFER, ignoring links in VISITED-BUFFERS.
-
-First we collect all the links on the page, then we traverse the links that go to Org-Mode files."
-  (with-current-buffer (find-file-noselect buffer)
-    (let ((edges (org-graph--buffer-edges)))
-      (cl-union edges
-             (cl-loop for org-link in (org-graph--org-links (buffer-file-name) visited-buffers)
-                   appending (org-graph--make-graph org-link
-                                                    (cl-adjoin (buffer-file-name) visited-buffers)))
-             :test #'equal))))
-
 (defun org-graph--vertices (graph)
   "Get the set of GRAPH's vertices."
   (cl-loop for (source target) in graph
@@ -111,6 +99,18 @@ First we collect all the links on the page, then we traverse the links that go t
         collect target into out
 
         finally return out))
+
+(defun org-graph--make-graph (buffer &optional visited-buffers)
+  "Create graph from links in BUFFER, ignoring links in VISITED-BUFFERS.
+
+First we collect all the links on the page, then we traverse the links that go to Org-Mode files."
+  (with-current-buffer (find-file-noselect buffer)
+    (let ((edges (org-graph--buffer-edges)))
+      (cl-union edges
+                (cl-loop for org-link in (org-graph--org-links (buffer-file-name) visited-buffers)
+                         appending (org-graph--make-graph org-link
+                                                          (cl-adjoin (buffer-file-name) visited-buffers)))
+                :test #'equal))))
 
 (defun org-graph--graph->graphviz (graph)
   "Create graphviz document as string from GRAPH.
