@@ -31,8 +31,18 @@
 (require 'cl-lib)
 (require 'org)
 
+(defgroup org-graph nil
+  "Graph the relationships between your Org-Mode files"
+  :group 'tools)
 
-(defvar org-graph-graphviz-command "dot")
+(defcustom org-graph-graphviz-command "dot"
+  "The graphviz command to run."
+  :group 'org-graph
+  :type '(choice (const "dot")
+                 (const "neato")
+                 (const "circo")
+                 (const "twopi")
+                 (const "fdp")))
 
 (defun org-graph--make-edge (source target)
   "Create link graph edge from SOURCE and TARGET."
