@@ -18,3 +18,7 @@
   some legible output.
 
   Current output formats are PNG and SVG.
+* Implementation
+
+  Org Graph is implemented as a [[https://en.wikipedia.org/wiki/Literate_programming][literate program]] using Org-Mode. See
+  [[./org-graph.org][here]] for details.

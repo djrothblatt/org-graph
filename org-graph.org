@@ -1,0 +1,43 @@
+#+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
+#+options: author:t broken-links:nil c:nil creator:nil
+#+options: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:t
+#+options: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
+#+options: timestamp:t title:t toc:t todo:t |:t
+#+title: org-graph
+#+date: <2020-05-05 Tue>
+#+author: Daniel J. Rothblatt
+#+email: djrothblatt@gmail.com
+#+language: en
+#+select_tags: export
+#+exclude_tags: noexport
+#+creator: Emacs 26.3 (Org mode 9.3.6)
+* The motivation
+
+  Most Emacs users[fn:1] would agree that Org-Mode is amazing. If it
+  were the whole of what Emacs offered, [[https://en.wikipedia.org/wiki/Dayenu][it would be enough]].
+
+  But I've always wanted a way to manage arbitrarily many Org
+  files and easily see how they connect to each other. For example, I
+  might want to have a file ~fun.org~ to keep track of anything I
+  might do on my computer for entertainment. ~fun.org~ might link to
+  ~video-games.org~, ~books.org~, ~podcasts.org~, ~music.org~, and
+  whatever other files. Maybe I also have a ~learning.org~ file that
+  also links to ~books.org~ and ~podcasts.org~, as well as other files
+  like ~programming-languages.org~, ~natural-languages.org~, or
+  ~math.org~ that hold my notes on subjects I'm learning about. Then
+  any of these files could link to other files, or to each other, and
+  on and on. It would be nice to be able to see a quick illustration
+  of those links so that can:
+
+  - Have as many files as I want/need
+  - Leave them wherever I feel is most appropriate in my filesystem
+    without forgetting where they are or how to find them
+  - Enjoy a pretty picture :)
+
+
+  These are some of the motivations behind this project.
+* The program
+
+* Footnotes
+
+[fn:1] Emacsniks?
