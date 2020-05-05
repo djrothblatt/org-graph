@@ -90,15 +90,11 @@
 
 (defun org-graph--vertices (graph)
   "Get the set of GRAPH's vertices."
-  (cl-loop for (source target) in graph
-
-        unless (member source out)
-        collect source into out
-
-        unless (member target out)
-        collect target into out
-
-        finally return out))
+  (cl-remove-duplicates
+   (cl-loop for (source target) in graph
+            collect source
+            collect target)
+   :test #'equal))
 
 (defun org-graph--make-graph (buffer &optional visited-buffers)
   "Create graph from links in BUFFER, ignoring links in VISITED-BUFFERS.

@@ -230,19 +230,16 @@
 *** Get vertices from graph
 
     We mainly need the vertices of the graph for rendering it.
+
     #+NAME: vertices-from-graph
     #+BEGIN_SRC elisp
       (defun org-graph--vertices (graph)
         "Get the set of GRAPH's vertices."
-        (cl-loop for (source target) in graph
-
-              unless (member source out)
-              collect source into out
-
-              unless (member target out)
-              collect target into out
-
-              finally return out))
+        (cl-remove-duplicates
+         (cl-loop for (source target) in graph
+                  collect source
+                  collect target)
+         :test #'equal))
     #+END_SRC
 
 *** Serialize graph
