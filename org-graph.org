@@ -26,12 +26,12 @@
   ~math.org~ that hold my notes on subjects I'm learning about. Then
   any of these files could link to other files, or to each other, and
   on and on. It would be nice to be able to see a quick illustration
-  of those links so that can:
+  of those links so that I can:
 
   - Have as many files as I want/need
   - Leave them wherever I feel is most appropriate in my filesystem
     without forgetting where they are or how to find them
-  - Enjoy a pretty picture :)
+  - Enjoy a pretty picture every now and then
 
 
   These are some of the motivations behind this project.
@@ -202,6 +202,21 @@
          :test #'equal))
     #+END_SRC
 
+*** Get vertices from graph
+
+    We mainly need the vertices of the graph for rendering it.
+
+    #+NAME: vertices-from-graph
+    #+BEGIN_SRC elisp
+      (defun org-graph--vertices (graph)
+        "Get the set of GRAPH's vertices."
+        (cl-remove-duplicates
+         (cl-loop for (source target) in graph
+                  collect source
+                  collect target)
+         :test #'equal))
+    #+END_SRC
+
 *** Create graph
 
     Now that we can [[#get-links-from-buffer][get links from a buffer]] and [[#links-to-edges][convert the links to
@@ -226,21 +241,6 @@
                       (cl-loop for org-link in org-links
                                appending (org-graph--make-graph org-link visited))
                       :test #'equal))))
-    #+END_SRC
-
-*** Get vertices from graph
-
-    We mainly need the vertices of the graph for rendering it.
-
-    #+NAME: vertices-from-graph
-    #+BEGIN_SRC elisp
-      (defun org-graph--vertices (graph)
-        "Get the set of GRAPH's vertices."
-        (cl-remove-duplicates
-         (cl-loop for (source target) in graph
-                  collect source
-                  collect target)
-         :test #'equal))
     #+END_SRC
 
 *** Serialize graph
