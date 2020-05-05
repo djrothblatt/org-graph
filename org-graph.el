@@ -33,18 +33,18 @@
 (defvar org-graph-graphviz-command "dot")
 
 (defun org-graph--make-edge (source target)
-  "Creates link graph edge from SOURCE and TARGET."
+  "Create link graph edge from SOURCE and TARGET."
   (list source target))
 
 (defun org-graph--file-link->edge (link)
-  "Turns file link LINK into graph edge."
+  "Turn file link LINK into graph edge."
   (org-graph--make-edge
    (buffer-file-name)
    (expand-file-name
     (org-element-property :path link))))
 
 (defun org-graph--web-link->edge (link)
-  "Turns web link LINK into graph edge."
+  "Turn web link LINK into graph edge."
   (org-graph--make-edge
    (buffer-file-name)
    (org-element-property :raw-link link)))
@@ -74,7 +74,7 @@
     #'org-graph--link->edge))
 
 (defun org-graph--make-graph (buffer &optional visited-buffers)
-  "Create graph from links in BUFFER.
+  "Create graph from links in BUFFER, ignoring links in VISITED-BUFFERS.
 
 First we collect all the links on the page, then we traverse the links that go to Org-Mode files."
   (with-current-buffer (find-file-noselect buffer)
