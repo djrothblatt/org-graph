@@ -116,7 +116,7 @@
 
    We need to construct a (directed) graph consisting of links between
    Org files. We represent a graph as a set of edges ~((source target)
-   ...)~[fn:2], where ~source~ and ~target~ are each links
+   ...)~ [fn:2], where ~source~ and ~target~ are each links
    (represented as strings).
 
    #+NAME: helpers
@@ -280,7 +280,7 @@
    #+NAME: commands
    #+BEGIN_SRC elisp
      (defun org-graph/create-png (buffer)
-       "Create graphviz document of BUFFER."
+       "Create graphviz document of BUFFER and display in other window."
        (interactive "bOrg buffer: ")
        (shell-command
         (concat org-graph-graphviz-command
@@ -292,7 +292,7 @@
        (switch-to-buffer-other-window (find-file-noselect "org-graph.png")))
 
      (defun org-graph/create-svg (buffer)
-       "Create clickable svg graph of BUFFER."
+       "Create clickable svg graph of BUFFER and browse it."
        (interactive "bOrg buffer: ")
        (shell-command
         (concat org-graph-graphviz-command
@@ -300,7 +300,8 @@
                 (org-graph--graph->graphviz
                  (org-graph--make-graph buffer))
                 "\nEOF")
-        "*org-graph*"))
+        "*org-graph*")
+       (browse-url-of-file (concat "file://" (expand-file-name "./org-graph.svg"))))
    #+END_SRC
 *** TODO Check that the user has Graphviz installed before running command
 

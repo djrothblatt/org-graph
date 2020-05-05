@@ -124,7 +124,7 @@ GRAPH is an edge set ((source target) ...)."
                 concat (format "  \"%s\"->\"%s\";\n" source target))))
 
 (defun org-graph/create-png (buffer)
-  "Create graphviz document of BUFFER."
+  "Create graphviz document of BUFFER and display in other window."
   (interactive "bOrg buffer: ")
   (shell-command
    (concat org-graph-graphviz-command
@@ -136,7 +136,7 @@ GRAPH is an edge set ((source target) ...)."
   (switch-to-buffer-other-window (find-file-noselect "org-graph.png")))
 
 (defun org-graph/create-svg (buffer)
-  "Create clickable svg graph of BUFFER."
+  "Create clickable svg graph of BUFFER and browse it."
   (interactive "bOrg buffer: ")
   (shell-command
    (concat org-graph-graphviz-command
@@ -144,7 +144,8 @@ GRAPH is an edge set ((source target) ...)."
            (org-graph--graph->graphviz
             (org-graph--make-graph buffer))
            "\nEOF")
-   "*org-graph*"))
+   "*org-graph*")
+  (browse-url-of-file (concat "file://" (expand-file-name "./org-graph.svg"))))
 
 (provide 'org-graph)
 
