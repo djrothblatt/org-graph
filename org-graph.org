@@ -1,10 +1,9 @@
 #+options: ':nil *:t -:t ::t <:t H:3 \n:nil ^:t arch:headline
 #+options: author:t broken-links:nil c:nil creator:nil
-#+options: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:t
+#+options: d:(not "LOGBOOK") date:t e:t email:nil f:t inline:t num:nil
 #+options: p:nil pri:nil prop:nil stat:t tags:t tasks:t tex:t
 #+options: timestamp:t title:t toc:t todo:t |:t
 #+title: org-graph
-#+date: <2020-05-05 Tue>
 #+author: Daniel J. Rothblatt
 #+email: djrothblatt@gmail.com
 #+language: en
@@ -13,13 +12,13 @@
 #+creator: Emacs 26.3 (Org mode 9.3.6)
 * The motivation
 
-  Most Emacs users[fn:1] would agree that Org-Mode is amazing. If it
-  were the whole of what Emacs offered, [[https://en.wikipedia.org/wiki/Dayenu][it would be enough]].
+  Most Emacsniks would agree that Org-Mode is amazing. If it were the
+  whole of what Emacs offered, [[https://en.wikipedia.org/wiki/Dayenu][it would be enough]].
 
-  But I've always wanted a way to manage arbitrarily many Org
-  files and easily see how they connect to each other. For example, I
-  might want to have a file ~fun.org~ to keep track of anything I
-  might do on my computer for entertainment. ~fun.org~ might link to
+  But I've always wanted a way to manage arbitrarily many Org files
+  and easily see how they connect to each other. For example, I might
+  want to have a file ~fun.org~ to keep track of anything I might do
+  on my computer for entertainment. ~fun.org~ might link to
   ~video-games.org~, ~books.org~, ~podcasts.org~, ~music.org~, and
   whatever other files. Maybe I also have a ~learning.org~ file that
   also links to ~books.org~ and ~podcasts.org~, as well as other files
@@ -116,7 +115,7 @@
 
    We need to construct a (directed) graph consisting of links between
    Org files. We represent a graph as a set of edges ~((source target)
-   ...)~ [fn:2], where ~source~ and ~target~ are each links
+   ...)~ [fn:1], where ~source~ and ~target~ are each links
    (represented as strings).
 
    #+NAME: helpers
@@ -205,7 +204,7 @@
 
 *** Create graph
 
-    Now that we can [[#links-from-buffer][get links from a buffer]] and [[#links-to-edges][convert the links to
+    Now that we can [[#get-links-from-buffer][get links from a buffer]] and [[#links-to-edges][convert the links to
     edges]], we can build up a graph by traversing our Org files. We recursively build up
     our graph by getting all the edges out of the current buffer, then
     following the links we haven't visited yet and getting their
@@ -248,7 +247,7 @@
 
 *** Serialize graph
 
-    So far we only render our graph by passing it off to [[www.graphviz.org][Graphviz]],
+    So far we only render our graph by passing it off to [[https://www.graphviz.org][Graphviz]],
     which is very flexible and good. That Graphviz makes it so easy to
     render a graph from an edge set is one of the main reasons that
     we're representing our graph as an edge set.
@@ -306,8 +305,6 @@
 
 * Footnotes
 
-[fn:1] Emacsniks?
-
-[fn:2] Do we need any additional data besides the source and target
+[fn:1] Do we need any additional data besides the source and target
 for this particular graph? Since our edges are just lists, we can
 extend them pretty easily if we need to.
