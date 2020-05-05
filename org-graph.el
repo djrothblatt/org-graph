@@ -101,11 +101,12 @@
 
 First we collect all the links on the page, then we traverse the links that go to Org-Mode files."
   (with-current-buffer (find-file-noselect buffer)
-    (let ((edges (org-graph--buffer-edges)))
+    (let ((org-links (org-graph--org-links (buffer-file-name) visited-buffers))
+          (edges (org-graph--buffer-edges))
+          (visited (cl-adjoin (buffer-file-name) visited-buffers)))
       (cl-union edges
-                (cl-loop for org-link in (org-graph--org-links (buffer-file-name) visited-buffers)
-                         appending (org-graph--make-graph org-link
-                                                          (cl-adjoin (buffer-file-name) visited-buffers)))
+                (cl-loop for org-link in org-links
+                         appending (org-graph--make-graph org-link visited))
                 :test #'equal))))
 
 (defun org-graph--graph->graphviz (graph)
