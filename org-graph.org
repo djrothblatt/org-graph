@@ -13,7 +13,7 @@
 * The motivation
 
   Most Emacsniks would agree that Org-Mode is amazing. If it were the
-  whole of what Emacs offered, [[https://en.wikipedia.org/wiki/Dayenu][it would be enough]].
+  whole of what we could do with Emacs, [[https://en.wikipedia.org/wiki/Dayenu][it would be enough]].
 
   But I've always wanted a way to manage arbitrarily many Org files
   and easily see how they connect to each other. For example, I might
@@ -33,8 +33,6 @@
     without forgetting where they are or how to find them
   - Enjoy a pretty picture every now and then
 
-
-  These are some of the motivations behind this project.
 * The program
 ** The preamble
   Elisp projects have to include this boilerplate. Let's get it out of
@@ -132,7 +130,7 @@
    #+END_SRC
 *** Convert links to edges
     :PROPERTIES:
-    :CUSTOM_ID: links-to-edges
+    :CUSTOM_ID: convert-links-to-edges
     :END:
 
     As we traverse our graph, we need to be able to convert link elements in a
@@ -173,7 +171,7 @@
     :CUSTOM_ID: get-links-from-buffer
     :END:
 
-    We [[#links-to-edges][can build edges from link elements in our graph]], so now we need
+    We [[#convert-links-to-edges][can build edges from link elements in our graph]], so now we need
     to be able to grab the link elements from buffers. We only grab
     links to Org files that we haven't visited to avoid infinite
     loops.
@@ -219,7 +217,7 @@
 
 *** Create graph
 
-    Now that we can [[#get-links-from-buffer][get links from a buffer]] and [[#links-to-edges][convert the links to
+    Now that we can [[#get-links-from-buffer][get links from a buffer]] and [[#convert-links-to-edges][convert the links to
     edges]], we can build up a graph by traversing our Org files. We recursively build up
     our graph by getting all the edges out of the current buffer, then
     following the links we haven't visited yet and getting their
@@ -276,28 +274,30 @@
 
    #+NAME: commands
    #+BEGIN_SRC elisp
-     (cl-labels ((export (buffer file-name output-format)
-                         (shell-command
-                          (concat org-graph-graphviz-command
-                                  (format " -T %s -o %s.%s << EOF\n" output-format file-name output-format)
-                                  (org-graph--graph->graphviz
-                                   (org-graph--make-graph buffer))
-                                  "\nEOF")
-                          "*org-graph*")))
-       (defun org-graph/create-png (buffer)
-        "Create graphviz document of BUFFER and display in other window."
-        (interactive "bOrg buffer: ")
-        (let ((file-name (gensym "org-graph-")))
-          (export buffer file-name "png")
-          (switch-to-buffer-other-window (find-file-noselect (concat "./" (symbol-name file-name) ".png")))))
+     (defun org-graph--graphviz-export (buffer file-name output-format)
+       "Export graph of BUFFER to file FILE-NAME in format OUTPUT-FORMAT."
+       (shell-command
+        (concat org-graph-graphviz-command
+                (format " -T %s -o %s.%s << EOF\n" output-format file-name output-format)
+                (org-graph--graph->graphviz
+                 (org-graph--make-graph buffer))
+                "\nEOF")
+        "*org-graph*"))
 
-      (defun org-graph/create-svg (buffer)
-        "Create clickable svg graph of BUFFER and browse it."
-        (interactive "bOrg buffer: ")
-        (let ((file-name (gensym "org-graph-")))
-          (export buffer file-name "svg")
-          (browse-url-of-file
-           (concat "file://" (expand-file-name (concat "./" (symbol-name file-name) ".svg")))))))
+     (defun org-graph/create-png (buffer)
+       "Create graphviz PNG of BUFFER and display in other window."
+       (interactive "bOrg buffer: ")
+       (let ((file-name (symbol-name (gensym "org-graph-"))))
+         (org-graph--graphviz-export buffer file-name "png")
+         (switch-to-buffer-other-window (find-file-noselect (concat "./" file-name ".png")))))
+
+     (defun org-graph/create-svg (buffer)
+       "Create clickable svg graph of BUFFER and browse it."
+       (interactive "bOrg buffer: ")
+       (let ((file-name (symbol-name (gensym "org-graph-"))))
+         (org-graph--graphviz-export buffer file-name "svg")
+         (browse-url-of-file
+          (concat "file://" (expand-file-name (concat "./" file-name ".svg"))))))
    #+END_SRC
 *** TODO Check that the user has Graphviz installed before running command
 

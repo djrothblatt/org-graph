@@ -120,28 +120,30 @@ GRAPH is an edge set ((source target) ...)."
           (cl-loop for (source target) in graph
                 concat (format "  \"%s\"->\"%s\";\n" source target))))
 
-(cl-labels ((export (buffer file-name output-format)
-                    (shell-command
-                     (concat org-graph-graphviz-command
-                             (format " -T %s -o %s.%s << EOF\n" output-format file-name output-format)
-                             (org-graph--graph->graphviz
-                              (org-graph--make-graph buffer))
-                             "\nEOF")
-                     "*org-graph*")))
-  (defun org-graph/create-png (buffer)
-   "Create graphviz document of BUFFER and display in other window."
-   (interactive "bOrg buffer: ")
-   (let ((file-name (gensym "org-graph-")))
-     (export buffer file-name "png")
-     (switch-to-buffer-other-window (find-file-noselect (concat "./" (symbol-name file-name) ".png")))))
+(defun org-graph--graphviz-export (buffer file-name output-format)
+  "Export graph of BUFFER to file FILE-NAME in format OUTPUT-FORMAT."
+  (shell-command
+   (concat org-graph-graphviz-command
+           (format " -T %s -o %s.%s << EOF\n" output-format file-name output-format)
+           (org-graph--graph->graphviz
+            (org-graph--make-graph buffer))
+           "\nEOF")
+   "*org-graph*"))
 
- (defun org-graph/create-svg (buffer)
-   "Create clickable svg graph of BUFFER and browse it."
-   (interactive "bOrg buffer: ")
-   (let ((file-name (gensym "org-graph-")))
-     (export buffer file-name "svg")
-     (browse-url-of-file
-      (concat "file://" (expand-file-name (concat "./" (symbol-name file-name) ".svg")))))))
+(defun org-graph/create-png (buffer)
+  "Create graphviz PNG of BUFFER and display in other window."
+  (interactive "bOrg buffer: ")
+  (let ((file-name (symbol-name (gensym "org-graph-"))))
+    (org-graph--graphviz-export buffer file-name "png")
+    (switch-to-buffer-other-window (find-file-noselect (concat "./" file-name ".png")))))
+
+(defun org-graph/create-svg (buffer)
+  "Create clickable svg graph of BUFFER and browse it."
+  (interactive "bOrg buffer: ")
+  (let ((file-name (symbol-name (gensym "org-graph-"))))
+    (org-graph--graphviz-export buffer file-name "svg")
+    (browse-url-of-file
+     (concat "file://" (expand-file-name (concat "./" file-name ".svg"))))))
 
 (provide 'org-graph)
 
